@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/Course1_Fall19_HW3" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Course1_Fall19_HW4" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/asl_turtlebot" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/image_pipeline" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/turtlebot3" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/turtlebot3_msgs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/turtlebot3_simulations" vcs="Git" />
+  </component>
+</project>

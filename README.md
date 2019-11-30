@@ -10,6 +10,8 @@
 
 2.  Start the state machine
 `roscd executive_smach/scripts`
+
+
 `python aa274_sm.py`
 
 3. Start the state machine viewer

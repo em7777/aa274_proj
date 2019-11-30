@@ -61,7 +61,6 @@
     <param name="lasamplestep" value="0.005"/>
   </node>
 
-  <!--<node pkg="asl_turtlebot" type="goal_commander.py" name="goal_commander" />-->
   <node pkg="asl_turtlebot" type="detector.py" name="turtlebot_detector" />
 
     <!-- Map server -->
@@ -75,4 +74,11 @@
   </include>
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/newtesting.rviz"/>
+
+
+  <!-- frontier exploration -->
+  <include file="$(find asl_turtlebot)/launch/frontier_expl.launch">
+  </include>
+
+
 </launch>

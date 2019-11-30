@@ -5,7 +5,7 @@
 2. cd catkin_ws && catkin_make
 
 # Usage 
-1.  Launchthe tb stack, gmapping, navigation etc.
+1.  Launch the tb stack, gmapping, navigation etc.
 `roslaunch asl_turtlebot project_custom.launch`
 
 2.  Start the state machine

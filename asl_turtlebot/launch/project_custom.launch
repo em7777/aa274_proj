@@ -77,8 +77,13 @@
 
 
   <!-- frontier exploration -->
-  <include file="$(find asl_turtlebot)/launch/frontier_expl.launch">
-  </include>
+  <!--<include file="$(find asl_turtlebot)/launch/frontier_expl.launch">
+  </include>-->
+
+  <!-- node pkg="asl_turtlebot" type="gen_new_frontier.py" name="gen_new_frontier" /-->
+
+
+
 
 
 </launch>

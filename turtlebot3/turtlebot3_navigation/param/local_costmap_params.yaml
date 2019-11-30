@@ -6,10 +6,10 @@ local_costmap:
   publish_frequency: 10.0
   transform_tolerance: 0.5  
 
-  static_map: false  
+  static_map: true  
   rolling_window: true
-  width: 1.5
-  height: 1.5
+  width: 3
+  height: 3
   resolution: 0.025
   
   inflation_layer:

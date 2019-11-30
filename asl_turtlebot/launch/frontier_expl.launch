@@ -10,4 +10,6 @@
 
 	  <node pkg="asl_turtlebot" type="pub_expl_bounds.py" name="pub_expl_bounds" />
 
+	  <node pkg="asl_turtlebot" type="gen_new_frontier.py" name="gen_new_frontier" />
+
   </launch>

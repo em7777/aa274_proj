@@ -8,5 +8,5 @@
 `roslaunch asl_turtlebot project_custom.launch`
 
 ## Known Space Exploration
-This will explore map until fully re-explored only once. Use after the entire map has been explored and if we have not identified all food vendors yet.
+This will explore map until fully re-explored only once. Use after the entire map has been explored and if we have not identified all food vendors yet. @cr
 `roslaunch asl_turtlebot frontier_expl.launch known_map:=true`

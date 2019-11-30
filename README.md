@@ -6,15 +6,21 @@
 
 # Usage 
 1.  Launch the tb stack, gmapping, navigation etc.
+
+
 `roslaunch asl_turtlebot project_custom.launch`
 
 2.  Start the state machine
+
+
 `roscd executive_smach/scripts`
 
 
 `python aa274_sm.py`
 
 3. Start the state machine viewer
+
+
 `rosrun smach_viewer smach_viewer.py`
 
 

@@ -4,7 +4,8 @@
 1. Clone to a new catkin_ws/src
 2. cd catkin_ws && catkin_make
 
-# Frontier Exploration (Will explore map until complete)
+# Frontier Exploration 
+Will explore map until complete. Launches the tb stack, gmapping, navigation, frontier exploration etc. and assigns the exploration boundary in rviz automatically.
 `roslaunch asl_turtlebot project_custom.launch`
 
 ## Known Space Exploration

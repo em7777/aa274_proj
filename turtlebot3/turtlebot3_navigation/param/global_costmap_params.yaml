@@ -11,5 +11,5 @@ global_costmap:
   resolution: 0.025
   
   inflation_layer:
-    inflation_radius: 0.4
+    inflation_radius: 1.0 #0.4
     cost_scaling_factor: 8.0

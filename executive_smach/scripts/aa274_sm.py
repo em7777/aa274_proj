@@ -36,7 +36,7 @@ class Discover(smach.State):
         rospy.loginfo('Executing state Discover')
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
-        launch = roslaunch.parent.ROSLaunchParent(uuid, ["/home/ghost/catkin_ws/src/asl_turtlebot/launch/frontier_expl.launch"])
+        launch = roslaunch.parent.ROSLaunchParent(uuid, ["/home/aa274/catkin_ws/src/asl_turtlebot/launch/frontier_expl.launch"])
         launch.start()
         rospy.loginfo("Launching unknown exploration")
         rospy.sleep(3)
@@ -55,7 +55,7 @@ class Discover(smach.State):
 
         if (self.done == True):
             goalId = GoalID()
-            self.cancel_pub.publish(goalId)   
+            self.cancel_pub.publish(goalId)
             rospy.loginfo("Service dropped, map assumed discovered 1")
             launch.shutdown()
             rospy.sleep(3)
@@ -92,7 +92,7 @@ class Explore(smach.State):
         rospy.loginfo('Executing state Explore')
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
-        launch = roslaunch.parent.ROSLaunchParent(uuid, ["/home/ghost/catkin_ws/src/asl_turtlebot/launch/known_expl.launch"])
+        launch = roslaunch.parent.ROSLaunchParent(uuid, ["/home/aa274/catkin_ws/src/asl_turtlebot/launch/known_expl.launch"])
         launch.start()
         rospy.loginfo("Launching known exploration")
         rospy.sleep(3)
@@ -188,23 +188,23 @@ def main():
     # Open the container
     with sm:
         # Add states to the container
-        smach.StateMachine.add('Discover', Discover(), 
-                               transitions={'succeeded':'Explore', 
+        smach.StateMachine.add('Discover', Discover(),
+                               transitions={'succeeded':'Explore',
                                             'fail':'incomplete'})
-        smach.StateMachine.add('Explore', Explore(), 
-                               transitions={'succeeded':'GoHome', 
+        smach.StateMachine.add('Explore', Explore(),
+                               transitions={'succeeded':'GoHome',
                                             'fail':'incomplete'})
-        smach.StateMachine.add('GoHome', GoHome(), 
-                               transitions={'succeeded':'complete', 
+        smach.StateMachine.add('GoHome', GoHome(),
+                               transitions={'succeeded':'complete',
                                             'fail':'incomplete'})
-    
+
     # Create and start the introspection server
     sis = smach_ros.IntrospectionServer('my_smach_introspection_server', sm, '/SM_ROOT')
     sis.start()
-    
+
     # Execute SMACH plan
     outcome = sm.execute()
-    
+
     # Wait for ctrl-c to stop the application
     rospy.spin()
     sis.stop()

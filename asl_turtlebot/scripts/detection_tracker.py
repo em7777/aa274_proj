@@ -65,8 +65,9 @@ class detection_tracker():
                     self.detected_items[object.name+str(self.stop_counter)] = new_item
                     self.stop_counter += 1
                 # else update the distance if closer than before:
-                elif object.distance < self.detected_items["stop_sign"+str(detected_index)].distance:
-                    self.detected_items["stop_sign"+str(detected_index)].distance = object.distance
+                # THIS WONT WORK AS IS
+                # elif object.distance < self.detected_items["stop_sign"+str(detected_index)].distance:
+                #     self.detected_items["stop_sign"+str(detected_index)].distance = object.distance
 
             # if the object is anything other than a stop sign
             else:

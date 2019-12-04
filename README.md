@@ -13,7 +13,7 @@
 2.  Start the state machine
 
 
-`roscd executive_smach/scripts`
+`cd ~/(your catkin ws)/src/executive_smach/scripts`
 
 
 `python aa274_sm.py`

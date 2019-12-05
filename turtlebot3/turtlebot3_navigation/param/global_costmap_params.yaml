@@ -8,6 +8,7 @@ global_costmap:
   width: 6
   height: 6
   static_map: true
+  rolling_window: true
   resolution: 0.025
   
   inflation_layer:

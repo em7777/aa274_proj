@@ -2,7 +2,10 @@
 
 import rospy
 from asl_turtlebot.msg import DetectedObject, DetectedObjectList, TrackedObject, TrackedObjectList
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
+from std_msgs.msg import ColorRGBA
 import numpy as np
 
 STOP_SIGN_TH = 0.05
@@ -26,6 +29,7 @@ class detection_tracker():
         rospy.Subscriber('/detector/objects', DetectedObjectList, self.detection_callback)
         rospy.Subscriber('/odom', Odometry, self.update_pose)
         self.pub = rospy.Publisher('/object_knowledge', TrackedObjectList, queue_size=5)
+        self.pub_marker = rospy.Publisher('/object_marker', Marker, queue_size=5)
         rospy.spin()
 
     def custom_print(self):
@@ -65,9 +69,8 @@ class detection_tracker():
                     self.detected_items[object.name+str(self.stop_counter)] = new_item
                     self.stop_counter += 1
                 # else update the distance if closer than before:
-                # THIS WONT WORK AS IS
-                # elif object.distance < self.detected_items["stop_sign"+str(detected_index)].distance:
-                #     self.detected_items["stop_sign"+str(detected_index)].distance = object.distance
+                elif object.distance < self.detected_items["stop_sign"+str(detected_index)].distance:
+                    self.detected_items["stop_sign"+str(detected_index)].distance = object.distance
 
             # if the object is anything other than a stop sign
             else:
@@ -94,6 +97,26 @@ class detection_tracker():
             msg.distance = self.detected_items[key].distance
             msg_list.ob_msgs.append(msg)
         self.pub.publish(msg_list)
+        # Publish Markers
+        point_list = []
+        color_list = []
+        for key in self.detected_items:
+            point_list.append(Point(self.detected_items[key].x,self.detected_items[key].y,0))
+            if key[0:len(key)-1] == "stop_sign":
+                color_list.append(ColorRGBA(1.0, 0, 0, 1.0))
+            else:
+                color_list.append(ColorRGBA(0, 1.0, 0, 1.0))
+        m = Marker()
+        m.type = Marker.SPHERE_LIST
+        m.action = Marker.ADD
+        m.header.frame_id = "map"
+        m.scale.x = 0.1
+        m.scale.y = 0.1
+        m.points = point_list
+        m.colors = color_list
+        self.pub_marker.publish(m)
+
+
 
 
     # updates the pose of the robot everytime a new odom message comes out

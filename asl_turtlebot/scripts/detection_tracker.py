@@ -8,15 +8,16 @@ from nav_msgs.msg import Odometry
 from std_msgs.msg import ColorRGBA
 import numpy as np
 
-STOP_SIGN_TH = 0.05
+STOP_SIGN_TH = 0.5
+CONFIDENCE_TH = 0.8
 
 # the main dictionary contains values that are objects of this class
 class item():
-    def __init__(self, x, y, th, distance):
+    def __init__(self, x, y, th, confidence):
         self.x = x
         self.y = y
         self.th = th
-        self.distance = distance
+        self.confidence = confidence
 
 class detection_tracker():
     def __init__(self):
@@ -39,18 +40,22 @@ class detection_tracker():
                 self.detected_items[key].x,
                 self.detected_items[key].y,
                 self.detected_items[key].th,
-                self.detected_items[key].distance)
+                self.detected_items[key].confidence)
 
     def detection_callback(self, data):
         # for all detected objects, check if they need to be added to the dict
         for object in data.ob_msgs:
+            # skip objects with less than 0.8 confidence
+            if object.confidence < CONFIDENCE_TH:
+                continue
             # angle between world x axis and the line between robot and object
             alpha = 0.5*(object.thetaleft+object.thetaright) + self.th
             object_x = self.x + object.distance*np.cos(alpha)
             object_y = self.y + object.distance*np.sin(alpha)
             object_th = 0 # TODO: find object heading
             # making an item() object
-            new_item = item(object_x, object_y, object_th, object.distance)
+            # new_item = item(object_x, object_y, object_th, object.distance)
+            new_item = item(self.x, self.y, self.th, object.confidence)
 
             # if its a stop sign add it and increase counter
             if object.name == "stop_sign":
@@ -68,9 +73,9 @@ class detection_tracker():
                 if not already_detected:
                     self.detected_items[object.name+str(self.stop_counter)] = new_item
                     self.stop_counter += 1
-                # else update the distance if closer than before:
-                elif object.distance < self.detected_items["stop_sign"+str(detected_index)].distance:
-                    self.detected_items["stop_sign"+str(detected_index)].distance = object.distance
+                # else update the confidence if closer than before:
+                elif object.confidence < self.detected_items["stop_sign"+str(detected_index)].confidence:
+                    self.detected_items["stop_sign"+str(detected_index)].confidence = object.confidence
 
             # if the object is anything other than a stop sign
             else:
@@ -78,8 +83,8 @@ class detection_tracker():
                 if object.name not in self.detected_items.keys():
                     self.detected_items[object.name] = new_item
                 # if old object, but with better measurements, update it
-                elif object.distance < self.detected_items[object.name].distance:
-                    self.detected_items[object.name].distance = object.distance
+                elif object.confidence < self.detected_items[object.name].confidence:
+                    self.detected_items[object.name].confidence = object.confidence
         # FOR TESTING PURPOSES
         self.custom_print()
 
@@ -94,24 +99,24 @@ class detection_tracker():
             msg.x = self.detected_items[key].x
             msg.y = self.detected_items[key].y
             msg.th = self.detected_items[key].th
-            msg.distance = self.detected_items[key].distance
+            msg.confidence = self.detected_items[key].confidence
             msg_list.ob_msgs.append(msg)
         self.pub.publish(msg_list)
         # Publish Markers
         point_list = []
         color_list = []
         for key in self.detected_items:
-            point_list.append(Point(self.detected_items[key].x,self.detected_items[key].y,0))
+            point_list.append(Point(self.detected_items[key].x,self.detected_items[key].y,0.5))
             if key[0:len(key)-1] == "stop_sign":
                 color_list.append(ColorRGBA(1.0, 0, 0, 1.0))
             else:
-                color_list.append(ColorRGBA(0, 1.0, 0, 1.0))
+                color_list.append(ColorRGBA(0, 1.0, 1.0, 1.0))
         m = Marker()
-        m.type = Marker.SPHERE_LIST
+        m.type = Marker.CUBE_LIST
         m.action = Marker.ADD
         m.header.frame_id = "map"
-        m.scale.x = 0.1
-        m.scale.y = 0.1
+        m.scale.x = 0.5
+        m.scale.y = 0.5
         m.points = point_list
         m.colors = color_list
         self.pub_marker.publish(m)

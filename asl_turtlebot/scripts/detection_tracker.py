@@ -3,10 +3,11 @@
 import rospy
 from asl_turtlebot.msg import DetectedObject, DetectedObjectList, TrackedObject, TrackedObjectList
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PoseStamped, PoseWithCovariance
 from nav_msgs.msg import Odometry
 from std_msgs.msg import ColorRGBA
 import numpy as np
+import tf
 
 STOP_SIGN_TH = 0.5
 CONFIDENCE_TH = 0.75
@@ -31,6 +32,7 @@ class detection_tracker():
         self.th = 0
         self.pose = None
         self.stop_counter = 0
+        self.tf_listener = tf.TransformListener()
         rospy.Subscriber('/detector/objects', DetectedObjectList, self.detection_callback)
         rospy.Subscriber('/odom', Odometry, self.update_pose)
         self.pub = rospy.Publisher('/object_knowledge', TrackedObjectList, queue_size=5)
@@ -126,15 +128,27 @@ class detection_tracker():
         m.colors = color_list
         self.pub_marker.publish(m)
 
-
-
-
     # updates the pose of the robot everytime a new odom message comes out
     def update_pose(self, data):
-        self.x = data.pose.pose.position.x
-        self.y = data.pose.pose.position.y
-        self.th = data.pose.pose.orientation.w
-        self.pose = data.pose
+        # transform to map coordinates
+        (translation,rotation) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+        self.x = translation[0]
+        self.y = translation[1]
+        euler = tf.transformations.euler_from_quaternion(rotation)
+        self.th = euler[2]
+        # t = self.tf_listener.getLatestCommonTime("/map","/odom")
+        # pose_to_transform = PoseStamped()
+        # pose_to_transform.header = data.header
+        # pose_to_transform.pose = data.pose.pose
+        # pose_in_map = self.tf_listener.transformPose("/map", pose_to_transform)
+        # # unpack
+        # self.x = pose_in_map.pose.position.x
+        # self.y = pose_in_map.pose.position.y
+        # self.th = pose_in_map.pose.orientation.w
+        self.pose = PoseWithCovariance()
+        self.pose.pose.position.x = self.x
+        self.pose.pose.position.y = self.y
+        self.pose.pose.orientation.z = self.th
         self.write_dict_to_topic()
 
 

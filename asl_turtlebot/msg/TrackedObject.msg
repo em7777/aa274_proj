@@ -1,6 +1,5 @@
 string name
-geometry_msgs/PoseWithCovariance robot_pose
 float64 x
 float64 y
 float64 th
-float64 confidence
+float64 distance

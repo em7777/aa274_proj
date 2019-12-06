@@ -10,7 +10,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
 	dynamic_reconfigure
-  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -73,7 +72,6 @@ add_message_files(
 generate_messages(
  DEPENDENCIES
  std_msgs
- geometry_msgs
 )
 
 ################################################
@@ -192,3 +190,4 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+

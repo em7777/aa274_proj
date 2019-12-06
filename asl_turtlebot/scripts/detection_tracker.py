@@ -11,7 +11,7 @@ import tf
 
 STOP_SIGN_TH = 0.5
 CONFIDENCE_TH = 0.75
-FOOD_LIST = ["vase", "donut", "banana"]
+FOOD_LIST = ["zebra", "donut", "banana", "traffic_light"]
 
 # the main dictionary contains values that are objects of this class
 class item():
@@ -115,15 +115,19 @@ class detection_tracker():
             point_list.append(Point(self.detected_items[key].x,self.detected_items[key].y,0.5))
             if key[0:len(key)-1] == "stop_sign":
                 color_list.append(ColorRGBA(1.0, 0, 0, 1.0))
+            elif key == "home":
+                color_list.append(ColorRGBA(0,0,1.0,1.0))
+            elif key == "traffic_light":
+                color_list.append(ColorRGBA(0,0,0,1.0))
             else:
                 color_list.append(ColorRGBA(0, 1.0, 0.1, 1.0))
         m = Marker()
         m.type = Marker.CUBE_LIST
         m.action = Marker.ADD
         m.header.frame_id = "map"
-        m.scale.x = 0.07
-        m.scale.y = 0.07
-        m.scale.z = 1.5
+        m.scale.x = 0.05
+        m.scale.y = 0.05
+        m.scale.z = 1.0
         m.points = point_list
         m.colors = color_list
         self.pub_marker.publish(m)

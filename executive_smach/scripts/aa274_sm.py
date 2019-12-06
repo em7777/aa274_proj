@@ -28,7 +28,7 @@ class Discover(smach.State):
         smach.State.__init__(self, outcomes=['success'])
         self.detectedAllFood = False
         self.proceedToNavigationFlag = False
-        self.FOOD_LIST = ["vase", "donut", "banana"]
+        self.FOOD_LIST = ["zebra", "donut", "banana","traffic_light"]
         self.MY_LIST = copy.deepcopy(self.FOOD_LIST)
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.JoyCallback)
         self.food_sub = rospy.Subscriber(
@@ -143,10 +143,10 @@ class Navigation(smach.State):
                 continue
             rospy.loginfo(self.goal.target_pose.pose)
             self.client.send_goal(self.goal)
-            wait = self.client.wait_for_result()
-            if not wait:
-                rospy.logerr("Action server not available!")
-                rospy.signal_shutdown("Action server not available!")
+            # wait = self.client.wait_for_result()
+            # if not wait:
+            #     rospy.logerr("Action server not available!")
+            #     rospy.signal_shutdown("Action server not available!")
             while not self.reachedGoal and not self.interrupted:
                 rospy.sleep(1)
             if self.interrupted:
@@ -175,7 +175,7 @@ class OHShit(smach.State):
         self.proceedToNavigationFlag = False
         goalId = GoalID()
         self.cancel_pub.publish(goalId)
-        
+
         while(True):
             if (self.proceedToNavigationFlag == True):
 

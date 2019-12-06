@@ -102,7 +102,7 @@ class detection_tracker():
             msg.x = self.detected_items[key].x
             msg.y = self.detected_items[key].y
             msg.th = self.detected_items[key].th
-            msg.robot_pose = self.pose
+            msg.robot_pose = self.detected_items[key].pose
             msg.confidence = self.detected_items[key].confidence
             msg_list.ob_msgs.append(msg)
         self.pub.publish(msg_list)
@@ -114,13 +114,14 @@ class detection_tracker():
             if key[0:len(key)-1] == "stop_sign":
                 color_list.append(ColorRGBA(1.0, 0, 0, 1.0))
             else:
-                color_list.append(ColorRGBA(0, 1.0, 1.0, 1.0))
+                color_list.append(ColorRGBA(0, 1.0, 0.1, 1.0))
         m = Marker()
         m.type = Marker.CUBE_LIST
         m.action = Marker.ADD
         m.header.frame_id = "map"
-        m.scale.x = 0.5
-        m.scale.y = 0.5
+        m.scale.x = 0.07
+        m.scale.y = 0.07
+        m.scale.z = 1.5
         m.points = point_list
         m.colors = color_list
         self.pub_marker.publish(m)

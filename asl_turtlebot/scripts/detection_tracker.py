@@ -56,7 +56,7 @@ class detection_tracker():
         # for all detected objects, check if they need to be added to the dict
         for object in data.ob_msgs:
             # skip objects with less than 0.8 confidence
-            if object.confidence < CONFIDENCE_TH:
+            if object.confidence < CONFIDENCE_TH and object.name != "stop_sign":
                 continue
             # making an item() object
             # new_item = item(object_x, object_y, object_th, object.distance)
@@ -135,6 +135,7 @@ class detection_tracker():
     # updates the pose of the robot everytime a new odom message comes out
     def update_pose(self, data):
         # transform to map coordinates
+        self.tf_listener.waitForTransform("/map","/base_footprint",rospy.Time(),rospy.Duration(3.0))
         (translation,rotation) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
         self.x = translation[0]
         self.y = translation[1]
@@ -152,7 +153,8 @@ class detection_tracker():
         self.pose = PoseWithCovariance()
         self.pose.pose.position.x = self.x
         self.pose.pose.position.y = self.y
-        self.pose.pose.orientation.z = self.th
+        # self.pose.pose.orientation.z = self.th
+        self.pose.pose.orientation = data.pose.pose.orientation
         self.write_dict_to_topic()
 
 

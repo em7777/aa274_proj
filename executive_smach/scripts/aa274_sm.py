@@ -28,7 +28,7 @@ class Discover(smach.State):
         smach.State.__init__(self, outcomes=['success'])
         self.detectedAllFood = False
         self.proceedToNavigationFlag = False
-        self.FOOD_LIST = ["zebra", "donut", "banana","traffic_light"]
+        self.FOOD_LIST = ["zebra", "donut", "banana","traffic_light", "stop_sign0"]
         self.MY_LIST = copy.deepcopy(self.FOOD_LIST)
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.JoyCallback)
         self.food_sub = rospy.Subscriber(
@@ -61,16 +61,9 @@ class Discover(smach.State):
                 rospy.loginfo('All food detected and navigation state flagged')
                 self.detectedAllFood = False
                 self.proceedToNavigationFlag = False
-                rospy.loginfo('Kill your teleop in 5...')
+                rospy.loginfo('Exiting Discover...')
                 rospy.sleep(1)
-                rospy.loginfo('Kill your teleop in 4...')
-                rospy.sleep(1)
-                rospy.loginfo('Kill your teleop in 3...')
-                rospy.sleep(1)
-                rospy.loginfo('Kill your teleop in 2..')
-                rospy.sleep(1)
-                rospy.loginfo('Kill your teleop in 1..')
-                rospy.sleep(1)
+
                 return 'success'
             print(self.proceedToNavigationFlag)
             print(self.MY_LIST)
@@ -97,7 +90,6 @@ class Navigation(smach.State):
         self.goal.target_pose.header.frame_id = "map"
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.client.wait_for_server()
-        print("ok")
         self.interrupted = False
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.JoyCallback)
 
@@ -141,9 +133,9 @@ class Navigation(smach.State):
                 rospy.loginfo('failed to retrieve pose for ' + curObj)
                 del orders[0]
                 continue
-            rospy.loginfo(self.goal.target_pose.pose)
+            #rospy.loginfo(self.goal.target_pose.pose)
             self.client.send_goal(self.goal)
-            # wait = self.client.wait_for_result()
+            # wait = self.client.wait_for_result(1)
             # if not wait:
             #     rospy.logerr("Action server not available!")
             #     rospy.signal_shutdown("Action server not available!")
@@ -167,7 +159,7 @@ class OHShit(smach.State):
         self.cancel_pub = rospy.Publisher(
             'move_base/cancel', GoalID, queue_size=10)
     def ExitJoyCallback(self, msg):
-        if msg.buttons[2] == 1:
+        if msg.buttons[1] == 1:
             self.proceedToNavigationFlag = True
 
     def execute(self, userdata):
@@ -180,15 +172,7 @@ class OHShit(smach.State):
             if (self.proceedToNavigationFlag == True):
 
                 self.proceedToNavigationFlag = False
-                rospy.loginfo('Kill your teleop in 5...')
-                rospy.sleep(1)
-                rospy.loginfo('Kill your teleop in 4...')
-                rospy.sleep(1)
-                rospy.loginfo('Kill your teleop in 3...')
-                rospy.sleep(1)
-                rospy.loginfo('Kill your teleop in 2..')
-                rospy.sleep(1)
-                rospy.loginfo('Kill your teleop in 1..')
+                rospy.loginfo('Exiting OHShit..')
                 rospy.sleep(1)
                 return 'success'
 
@@ -215,6 +199,7 @@ class Idle(smach.State):
         global orders
         orders = temp.split(",")
         rospy.loginfo(orders)
+        rospy.loginfo('Sent the big boy orders, lets go')
         return 'success'
 
     def callback(self, msg):

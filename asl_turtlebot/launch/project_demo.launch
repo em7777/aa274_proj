@@ -65,7 +65,7 @@
     <arg name="move_forward_only" value="$(arg move_forward_only)"/>
   </include>
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/newtesting.rviz"/>
+  <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find asl_turtlebot)/rviz/newtesting.rviz"/-->
 
 
   <!-- frontier exploration -->
@@ -79,3 +79,5 @@
 
 
 </launch>
+
+

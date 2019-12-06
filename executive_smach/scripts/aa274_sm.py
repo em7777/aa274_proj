@@ -11,20 +11,63 @@ import roslaunch
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalID
+from sensor_msgs.msg import Joy
+from asl_turtlebot.msg import DetectedObject, DetectedObjectList, TrackedObject, TrackedObjectList
 # # define state Discover
 
 class Discover(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['success'])
-        self.counter = 0
+        self.detectedAllFood = False
+        self.proceedToNavigationFlag = False
+        self.joy_sub = rospy.Subscriber('/joy', Joy, self.JoyCallback)
+        self.joy_sub = rospy.Subscriber('/object_knowledge', Joy, self.JoyCallback)
+        self.cancel_pub = rospy.Publisher('move_base/cancel', GoalID, queue_size=10)
+        self.FOOD_LIST = ["vase","donut","banana"]
+        self.MY_LIST = self.FOOD_LIST
+        #B = 3, X = 1, R1 = 6, R2 = 8, Y = 2
+
+    def JoyCallback(self, msg):
+        if msg.buttons[0] == 1:
+            self.proceedToNavigationFlag = True
+
+    def DetectorCallback(self, msg):
+        for object in msg.ob_msgs:
+            for ref in self.MY_LIST:
+                if object.name == ref:
+                    self.MY_LIST.remove(object.name)
+
 
     def execute(self, userdata):
-        rospy.loginfo('Executing state Discover')
-        if self.counter < 3:
-            self.counter += 1
-            return 'outcome1'
-        else:
-            return 'outcome2'
+        rospy.loginfo('Executing state Discover')   
+        self.proceedToNavigationFlag = False
+        self.detectedAllFood = False
+        goalId = GoalID()
+        self.cancel_pub.publish(goalId)   
+
+
+        while(True):
+
+            if (self.detectedAllFood == True) and (self.proceedToNavigationFlag == True):
+                rospy.loginfo('All food detected and navigation state flagged')   
+                self.detectedAllFood = False
+                self.proceedToNavigationFlag = False
+                rospy.loginfo('Kill your teleop in 5...')
+                rospy.sleep(1)
+                rospy.loginfo('Kill your teleop in 4...')
+                rospy.sleep(1)
+                rospy.loginfo('Kill your teleop in 3...')
+                rospy.sleep(1)
+                rospy.loginfo('Kill your teleop in 2..')
+                rospy.sleep(1)
+                rospy.loginfo('Kill your teleop in 1..')
+                rospy.sleep(1)
+                return 'success'
+            print("self.proceedToNavigationFlag")
+            print(self.MY_LIST)
+
+
+
 
 
 # define state Bar
@@ -34,7 +77,7 @@ class Navigation(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Navigation')
-        return 'outcome2'
+        return 'success'
 
 # define state Bar
 class OHShit(smach.State):
@@ -43,7 +86,7 @@ class OHShit(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state OHShit')
-        return 'outcome2'
+        return 'success'
 
 # define state Bar
 class Idle(smach.State):
@@ -52,7 +95,7 @@ class Idle(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Idle')
-        return 'outcome2'
+        return 'success'
         
 
 

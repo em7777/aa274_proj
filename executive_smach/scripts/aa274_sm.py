@@ -11,7 +11,11 @@ import roslaunch
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalID
+from std_msgs.msg import String
+
 # # define state Discover
+
+orders = []
 
 class Discover(smach.State):
     def __init__(self):
@@ -22,7 +26,7 @@ class Discover(smach.State):
         rospy.loginfo('Executing state Discover')
         if self.counter < 3:
             self.counter += 1
-            return 'outcome1'
+            return 'success'
         else:
             return 'outcome2'
 
@@ -34,7 +38,7 @@ class Navigation(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Navigation')
-        return 'outcome2'
+        return 'success'
 
 # define state Bar
 class OHShit(smach.State):
@@ -49,10 +53,28 @@ class OHShit(smach.State):
 class Idle(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['success', 'done'])
+        self.delivery = rospy.Subscriber('/delivery_request', String, self.callback)
+        self.order_list = None
+        self.orders_recieved = False
+        self.order_sent = False
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Idle')
-        return 'outcome2'
+
+        self.order_list = ""
+        self.orders_recieved = False
+        self.order_sent = False
+        while (self.orders_recieved == False):
+            if len(str(self.order_list)) > 0:
+                self.orders_recieved = True
+
+        temp = str(self.order_list)[7:len(str(self.order_list))-1]
+        orders = temp.split(",")
+
+        return 'success'
+
+    def callback(self, msg):
+        self.order_list = msg
 
 
 

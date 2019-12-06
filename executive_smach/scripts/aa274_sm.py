@@ -121,23 +121,26 @@ class Navigation(smach.State):
         rospy.loginfo('Executing state Navigation')
         self.poseLookup = None
         self.interrupted = False
+        global orders
 
         if (len(orders) > 0 and orders[-1] != HOME) or len(orders) == 0:
             orders.append(HOME)
 
         while not self.poseLookup:
             rospy.sleep(1) # wait for pose lookup
+        rospy.loginfo(orders)
 
         while len(orders) > 0:
             curObj = orders[0]
+            rospy.loginfo('going to ' + curObj)
             self.reachedGoal = False
             self.goal.target_pose.header.stamp = rospy.Time.now()
-            # try:
-            self.goal.target_pose.pose = self.poseLookup[curObj]
-            # except:
-            #     rospy.loginfo('failed to retrieve pose for ' + curObj)
-            #     del orders[0]
-            #     continue
+            try:
+                self.goal.target_pose.pose = self.poseLookup[curObj]
+            except:
+                rospy.loginfo('failed to retrieve pose for ' + curObj)
+                del orders[0]
+                continue
             rospy.loginfo(self.goal.target_pose.pose)
             self.client.send_goal(self.goal)
             wait = self.client.wait_for_result()
@@ -161,13 +164,18 @@ class OHShit(smach.State):
         smach.State.__init__(self, outcomes=['success'])
         self.proceedToNavigationFlag = False
         self.exitjoy_sub = rospy.Subscriber('/joy', Joy, self.ExitJoyCallback)
-
+        self.cancel_pub = rospy.Publisher(
+            'move_base/cancel', GoalID, queue_size=10)
     def ExitJoyCallback(self, msg):
         if msg.buttons[2] == 1:
             self.proceedToNavigationFlag = True
 
     def execute(self, userdata):
         rospy.loginfo('Executing state OHShit')
+        self.proceedToNavigationFlag = False
+        goalId = GoalID()
+        self.cancel_pub.publish(goalId)
+        
         while(True):
             if (self.proceedToNavigationFlag == True):
 
@@ -203,8 +211,10 @@ class Idle(smach.State):
                 self.orders_recieved = True
 
         temp = str(self.order_list)[7:len(str(self.order_list))-1]
+        rospy.loginfo(temp)
+        global orders
         orders = temp.split(",")
-
+        rospy.loginfo(orders)
         return 'success'
 
     def callback(self, msg):

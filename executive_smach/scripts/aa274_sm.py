@@ -5,7 +5,7 @@ import rospy
 import smach
 import smach_ros
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose, PoseWithCovariance
 from frontier_exploration.srv import GetNextFrontier
 from move_base_msgs.msg import MoveBaseActionResult
 import roslaunch
@@ -15,6 +15,8 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalID
 from sensor_msgs.msg import Joy
 from asl_turtlebot.msg import DetectedObject, DetectedObjectList, TrackedObject, TrackedObjectList
+from std_msgs.msg import String
+
 # # define state Discover
 
 HOME = 'home'
@@ -26,13 +28,13 @@ class Discover(smach.State):
         smach.State.__init__(self, outcomes=['success'])
         self.detectedAllFood = False
         self.proceedToNavigationFlag = False
+        self.FOOD_LIST = ["vase", "donut", "banana"]
+        self.MY_LIST = copy.deepcopy(self.FOOD_LIST)
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.JoyCallback)
         self.food_sub = rospy.Subscriber(
             '/object_knowledge', TrackedObjectList, self.DetectorCallback)
         self.cancel_pub = rospy.Publisher(
             'move_base/cancel', GoalID, queue_size=10)
-        self.FOOD_LIST = ["vase", "donut", "banana"]
-        self.MY_LIST = copy.deepcopy(self.FOOD_LIST)
         # B = 3, X = 1, R1 = 6, R2 = 8, Y = 2
 
     def JoyCallback(self, msg):
@@ -70,40 +72,46 @@ class Discover(smach.State):
                 rospy.loginfo('Kill your teleop in 1..')
                 rospy.sleep(1)
                 return 'success'
-            # print(self.proceedToNavigationFlag)
-            print(self.MY_LIST)
             print(self.proceedToNavigationFlag)
+            print(self.MY_LIST)
             print(self.detectedAllFood)
             if not self.MY_LIST:
                 self.detectedAllFood = True
 
 
-# define state Bar
+# # define state Bar
 class Navigation(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['success', 'failed'])
         self.mbResultSub = rospy.Subscriber(
             '/move_base/result', MoveBaseActionResult, self.mbCallback)
-        self.mbPub = rospy.Publisher(
-            '/move_base_simple/goal', PoseStamped, queue_size=10)
+        # self.mbPub = rospy.Publisher(
+        #     '/move_base_simple/goal', PoseStamped, queue_size=10)
         self.vendorLocationSub = rospy.Subscriber(
             '/object_knowledge', TrackedObjectList, self.vLcallback)
-        self.mbResultSub = rospy.Subscriber(
-            '/move_base/result', MoveBaseActionResult, self.mbCallback)
+        # self.mbResultSub = rospy.Subscriber(
+        #     '/move_base/result', MoveBaseActionResult, self.mbCallback)
         self.poseLookup = None
-        if len(orders) > 0 and orders[-1] != HOME:
-            orders.append(HOME)
+
         self.goal = MoveBaseGoal()
         self.goal.target_pose.header.frame_id = "map"
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         self.client.wait_for_server()
+        print("ok")
         self.interrupted = False
+        self.joy_sub = rospy.Subscriber('/joy', Joy, self.JoyCallback)
 
     def vLcallback(self, msg):
         if not self.poseLookup:
+            rospy.loginfo('creating poseLookup')
             self.poseLookup = {}
-            for obj in msg:
-                self.poseLookup[obj.name] = obj.pose
+            for obj in msg.ob_msgs:
+                self.poseLookup[obj.name] = Pose()
+                self.poseLookup[obj.name] = obj.robot_pose.pose
+
+    def JoyCallback(self, msg):
+        if msg.buttons[2] == 1:
+            self.interrupted = True
 
     def mbCallback(self, msg):
         if (msg.status.status == 3):
@@ -111,12 +119,26 @@ class Navigation(smach.State):
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Navigation')
+        self.poseLookup = None
+        self.interrupted = False
+
+        if (len(orders) > 0 and orders[-1] != HOME) or len(orders) == 0:
+            orders.append(HOME)
+
+        while not self.poseLookup:
+            rospy.sleep(1) # wait for pose lookup
 
         while len(orders) > 0:
             curObj = orders[0]
             self.reachedGoal = False
             self.goal.target_pose.header.stamp = rospy.Time.now()
+            # try:
             self.goal.target_pose.pose = self.poseLookup[curObj]
+            # except:
+            #     rospy.loginfo('failed to retrieve pose for ' + curObj)
+            #     del orders[0]
+            #     continue
+            rospy.loginfo(self.goal.target_pose.pose)
             self.client.send_goal(self.goal)
             wait = self.client.wait_for_result()
             if not wait:
@@ -127,108 +149,67 @@ class Navigation(smach.State):
             if self.interrupted:
                 return 'failed'
             if self.reachedGoal:
+                rospy.loginfo('Retrieved ' + curObj)
+                rospy.sleep(2)
                 del orders[0]
 
         return 'success'
-
-# define state Bar
 
 
 class OHShit(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['success'])
+        self.proceedToNavigationFlag = False
+        self.exitjoy_sub = rospy.Subscriber('/joy', Joy, self.ExitJoyCallback)
+
+    def ExitJoyCallback(self, msg):
+        if msg.buttons[2] == 1:
+            self.proceedToNavigationFlag = True
 
     def execute(self, userdata):
         rospy.loginfo('Executing state OHShit')
-        return 'success'
+        while(True):
+            if (self.proceedToNavigationFlag == True):
 
-# define state Bar
-
+                self.proceedToNavigationFlag = False
+                rospy.loginfo('Kill your teleop in 5...')
+                rospy.sleep(1)
+                rospy.loginfo('Kill your teleop in 4...')
+                rospy.sleep(1)
+                rospy.loginfo('Kill your teleop in 3...')
+                rospy.sleep(1)
+                rospy.loginfo('Kill your teleop in 2..')
+                rospy.sleep(1)
+                rospy.loginfo('Kill your teleop in 1..')
+                rospy.sleep(1)
+                return 'success'
 
 class Idle(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['success', 'done'])
+        self.delivery = rospy.Subscriber('/delivery_request', String, self.callback)
+        self.order_list = None
+        self.orders_recieved = False
+        self.order_sent = False
 
     def execute(self, userdata):
         rospy.loginfo('Executing state Idle')
+
+        self.order_list = ""
+        self.orders_recieved = False
+        self.order_sent = False
+        while (self.orders_recieved == False):
+            if len(str(self.order_list)) > 0:
+                self.orders_recieved = True
+
+        temp = str(self.order_list)[7:len(str(self.order_list))-1]
+        orders = temp.split(",")
+
         return 'success'
 
-
-class ProcessOrder(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded', 'fail'])
-        # TODO: update topic name and message type
-        self.orderSub = rospy.Subscriber(
-            'ORDER_TOPIC', ORDER_MSG, self.orderCallback)
-        self.orderPub = rospy.Publisher('ORDER_TOPIC', ORDER_MSG)
-        # TODO: test if we need to cancel move base command early
-        # self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odomCallback)
-        self.mbResultSub = rospy.Subscriber(
-            '/move_base/result', MoveBaseActionResult, self.mbCallback)
-        self.mbPub = rospy.Publisher(
-            '/move_base_simple/goal', PoseStamped, queue_size=10)
-
-        self.reachedGoal = False
-        self.orders = []
-        self.goal = MoveBaseGoal()
-        self.goal.target_pose.header.frame_id = "map"
-        # TODO: better orientation
-        self.goal.target_pose.pose.position.z = 0
-        self.goal.target_pose.pose.orientation.x = 0
-        self.goal.target_pose.pose.orientation.y = 0
-        self.goal.target_pose.pose.orientation.z = -0.670949053335
-        self.goal.target_pose.pose.orientation.w = 0.741503450989
-        self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        self.client.wait_for_server()
-
-    def mbCallback(self, msg):
-        if (msg.status.status == 3):
-            self.reachedGoal = True
-
-    def orderCallback(self, msg):
-        self.orders = msg
-
-    def execute(self, ud):
-        while len(self.orders) == 0:
-            pass
-        for order in orders:
-            self.reachedGoal = False
-            self.goal.target_pose.header.stamp = rospy.Time.now()
-            self.goal.target_pose.pose.position.x = order.x
-            self.goal.target_pose.pose.position.y = order.y
-            self.client.send_goal(self.goal)
-            wait = self.client.wait_for_result()
-            if not wait:
-                rospy.logerr("Action server not available!")
-                rospy.signal_shutdown("Action server not available!")
-            while not self.reachedGoal:
-                rospy.sleep(1)
-        self.orderPub.publish([])
-        return 'succeeded'
-    # def odomCallback(self, msg):
-    #     # self.pose.pose = msg.pose.pose
-    #     # #strangely, passing 0 starting pose as arg works...
-    #     self.pose.header.frame_id = "map"
-    #     now = rospy.get_rostime()
-    #     self.pose.header.stamp.secs = now.secs
-    #     self.pose.header.stamp.nsecs = now.nsecs
-
-
-class Idle(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded', 'fail'])
-        self.sub = rospy.Subscriber('ORDER_TOPIC', ORDER_MSG, self.callback)
-        self.stayIdle = True
-
     def callback(self, msg):
-        if len(msg) > 0:
-            self.stayIdle = False
+        self.order_list = msg
 
-    def execute(self, userdata):
-        rospy.logging('Entering idle state')
-        while self.stayIdle:
-            pass
-        return 'succeeded'
 
 # main
 
@@ -271,6 +252,93 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# class Idle(smach.State):
+#     def __init__(self):
+#         smach.State.__init__(self, outcomes=['success', 'done'])
+
+#     def execute(self, userdata):
+#         rospy.loginfo('Executing state Idle')
+#         return 'success'
+
+
+# class ProcessOrder(smach.State):
+#     def __init__(self):
+#         smach.State.__init__(self, outcomes=['succeeded', 'fail'])
+#         # TODO: update topic name and message type
+#         self.orderSub = rospy.Subscriber(
+#             'ORDER_TOPIC', ORDER_MSG, self.orderCallback)
+#         self.orderPub = rospy.Publisher('ORDER_TOPIC', ORDER_MSG)
+#         # TODO: test if we need to cancel move base command early
+#         # self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odomCallback)
+#         self.mbResultSub = rospy.Subscriber(
+#             '/move_base/result', MoveBaseActionResult, self.mbCallback)
+#         self.mbPub = rospy.Publisher(
+#             '/move_base_simple/goal', PoseStamped, queue_size=10)
+
+#         self.reachedGoal = False
+#         self.orders = []
+#         self.goal = MoveBaseGoal()
+#         self.goal.target_pose.header.frame_id = "map"
+#         # TODO: better orientation
+#         self.goal.target_pose.pose.position.z = 0
+#         self.goal.target_pose.pose.orientation.x = 0
+#         self.goal.target_pose.pose.orientation.y = 0
+#         self.goal.target_pose.pose.orientation.z = -0.670949053335
+#         self.goal.target_pose.pose.orientation.w = 0.741503450989
+#         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+#         self.client.wait_for_server()
+
+#     def mbCallback(self, msg):
+#         if (msg.status.status == 3):
+#             self.reachedGoal = True
+
+#     def orderCallback(self, msg):
+#         self.orders = msg
+
+#     def execute(self, ud):
+#         while len(self.orders) == 0:
+#             pass
+#         for order in orders:
+#             self.reachedGoal = False
+#             self.goal.target_pose.header.stamp = rospy.Time.now()
+#             self.goal.target_pose.pose.position.x = order.x
+#             self.goal.target_pose.pose.position.y = order.y
+#             self.client.send_goal(self.goal)
+#             wait = self.client.wait_for_result()
+#             if not wait:
+#                 rospy.logerr("Action server not available!")
+#                 rospy.signal_shutdown("Action server not available!")
+#             while not self.reachedGoal:
+#                 rospy.sleep(1)
+#         self.orderPub.publish([])
+#         return 'succeeded'
+#     # def odomCallback(self, msg):
+#     #     # self.pose.pose = msg.pose.pose
+#     #     # #strangely, passing 0 starting pose as arg works...
+#     #     self.pose.header.frame_id = "map"
+#     #     now = rospy.get_rostime()
+#     #     self.pose.header.stamp.secs = now.secs
+#     #     self.pose.header.stamp.nsecs = now.nsecs
+
+
+# class Idle(smach.State):
+#     def __init__(self):
+#         smach.State.__init__(self, outcomes=['succeeded', 'fail'])
+#         self.sub = rospy.Subscriber('ORDER_TOPIC', ORDER_MSG, self.callback)
+#         self.stayIdle = True
+
+#     def callback(self, msg):
+#         if len(msg) > 0:
+#             self.stayIdle = False
+
+#     def execute(self, userdata):
+#         rospy.logging('Entering idle state')
+#         while self.stayIdle:
+#             pass
+#         return 'succeeded'
+
 
 
 # class Discover(smach.State):

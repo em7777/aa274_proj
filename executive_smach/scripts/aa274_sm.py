@@ -9,6 +9,7 @@ from frontier_exploration.srv import GetNextFrontier
 from move_base_msgs.msg import MoveBaseActionResult
 import roslaunch
 import actionlib
+import copy
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalID
 from sensor_msgs.msg import Joy
@@ -21,10 +22,10 @@ class Discover(smach.State):
         self.detectedAllFood = False
         self.proceedToNavigationFlag = False
         self.joy_sub = rospy.Subscriber('/joy', Joy, self.JoyCallback)
-        self.joy_sub = rospy.Subscriber('/object_knowledge', Joy, self.JoyCallback)
+        self.food_sub = rospy.Subscriber('/object_knowledge', TrackedObjectList, self.DetectorCallback)
         self.cancel_pub = rospy.Publisher('move_base/cancel', GoalID, queue_size=10)
         self.FOOD_LIST = ["vase","donut","banana"]
-        self.MY_LIST = self.FOOD_LIST
+        self.MY_LIST = copy.deepcopy(self.FOOD_LIST)
         #B = 3, X = 1, R1 = 6, R2 = 8, Y = 2
 
     def JoyCallback(self, msg):
@@ -33,6 +34,7 @@ class Discover(smach.State):
 
     def DetectorCallback(self, msg):
         for object in msg.ob_msgs:
+            #print(object.name)
             for ref in self.MY_LIST:
                 if object.name == ref:
                     self.MY_LIST.remove(object.name)
@@ -63,9 +65,12 @@ class Discover(smach.State):
                 rospy.loginfo('Kill your teleop in 1..')
                 rospy.sleep(1)
                 return 'success'
-            print("self.proceedToNavigationFlag")
+            #print(self.proceedToNavigationFlag)
             print(self.MY_LIST)
-
+            print(self.proceedToNavigationFlag)
+            print(self.detectedAllFood)
+            if not self.MY_LIST:
+                self.detectedAllFood = True
 
 
 
